@@ -1,0 +1,198 @@
+/* --------------------------------------------------
+   SELF-HOSTED FONTS
+   (Place .woff2 files inside: public/fonts)
+-------------------------------------------------- */
+
+/* Pilcrow Rounded — default site font */
+@font-face {
+    font-family: 'PilcrowRounded';
+    src: url('/fonts/PilcrowRounded-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PilcrowRounded';
+    src: url('/fonts/PilcrowRounded-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PilcrowRounded';
+    src: url('/fonts/PilcrowRounded-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Hoover — headings font */
+@font-face {
+    font-family: 'Hoover';
+    src: url('/fonts/Hoover-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Hoover';
+    src: url('/fonts/Hoover-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Hoover';
+    src: url('/fonts/Hoover-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* --------------------------------------------------
+   TAILWIND CORE & PLUGINS
+-------------------------------------------------- */
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+
+/* Tell Tailwind where your templates live */
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+/* Custom variant */
+@custom-variant dark (&:is(.dark *));
+
+/* --------------------------------------------------
+   THEME TOKENS
+-------------------------------------------------- */
+@theme {
+    --font-sans:
+        'PilcrowRounded',
+        ui-sans-serif,
+        system-ui,
+        sans-serif,
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --radius: 0.625rem;
+}
+
+/* --------------------------------------------------
+   LIGHT MODE VARIABLES
+-------------------------------------------------- */
+:root {
+    --background: oklch(0.98 0 0);
+    --foreground: oklch(0.18 0 0);
+
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0 0);
+
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0 0);
+
+    --primary: #4338CA;
+    --primary-foreground: oklch(0.985 0 0);
+
+    --secondary: #F9FAFB;
+    --secondary-foreground: #111827;
+
+    --muted: #E5E7EB;
+    --muted-foreground: #4B5563;
+
+    --accent: #F59E0B;
+    --accent-foreground: #1F2937;
+
+    --destructive: #DC2626;
+    --destructive-foreground: #F9FAFB;
+
+    --border: #E5E7EB;
+    --input: #D1D5DB;
+    --ring: #6366F1;
+
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #111827;
+}
+
+/* --------------------------------------------------
+   DARK MODE VARIABLES
+-------------------------------------------------- */
+.dark {
+    --background: #111827;
+    --foreground: #F9FAFB;
+
+    --card: #1F2937;
+    --card-foreground: #F9FAFB;
+
+    --popover: #1F2937;
+    --popover-foreground: #E5E7EB;
+
+    --primary: #6366F1;
+    --primary-foreground: #F9FAFB;
+
+    --secondary: #1F2937;
+    --secondary-foreground: #E5E7EB;
+
+    --muted: #374151;
+    --muted-foreground: #9CA3AF;
+
+    --accent: #FBBF24;
+    --accent-foreground: #111827;
+
+    --destructive: #EF4444;
+    --destructive-foreground: #F9FAFB;
+
+    --border: #374151;
+    --input: #4B5563;
+    --ring: #818CF8;
+
+    --sidebar: #1E293B;
+    --sidebar-foreground: #F9FAFB;
+}
+
+/* --------------------------------------------------
+   BASE LAYER
+-------------------------------------------------- */
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+
+    /* Headings use Hoover font */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Hoover', 'PilcrowRounded', sans-serif;
+    }
+}
