@@ -1,239 +1,202 @@
-import UserLayout from '@/layouts/frontend/user-layout';
-import { Head, Link, router } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import UserLayout from "@/layouts/frontend/user-layout";
+import { Head, Link, router } from "@inertiajs/react";
+import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface CartItem {
-    id: number;
-    name: string;
-    price: number;
-    quantity: number;
-    image?: string;
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
 }
 
 export default function Cart() {
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [total, setTotal] = useState(0);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const APP_URL = import.meta.env.VITE_APP_URL || 'http://127.0.0.1:8000';
+  const APP_URL = import.meta.env.VITE_APP_URL || "http://127.0.0.1:8000";
 
-    const getImageUrl = (path?: string) => {
-        if (!path) return '';
-        if (path.startsWith('http')) return path;
-        return `${APP_URL}/storage/${path.replace(/^storage\/|^public\//, '')}`;
+  const getImageUrl = (path?: string) => {
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+    return `${APP_URL}/storage/${path.replace(/^storage\/|^public\//, "")}`;
+  };
+
+  const normalizeCart = (items: any[]) => {
+    const normalized = items.map((item) => ({
+      id: item.id,
+      name: item.name ?? item.product?.name ?? "Unnamed",
+      price: item.price ?? item.product?.price ?? 0,
+      quantity: item.quantity ?? 1,
+      image: item.image ?? item.product?.image ?? "",
+    }));
+    setCartItems(normalized);
+  };
+
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const res = await fetch("/api/cart");
+        const data = await res.json();
+
+        if (Array.isArray(data.items)) normalizeCart(data.items);
+        else if (Array.isArray(data.cart)) normalizeCart(Object.values(data.cart));
+        else if (Array.isArray(data)) normalizeCart(data);
+        else setCartItems([]);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchCart();
+  }, []);
 
-    // Normalize cart items and calculate total
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const normalizeCart = (items: any[]) => {
-        const normalized = items.map((item) => ({
-            id: item.id,
-            name: item.name ?? item.product?.name ?? 'Unnamed',
-            price: item.price ?? item.product?.price ?? 0,
-            quantity: item.quantity ?? 1,
-            image: item.image ?? item.product?.image ?? '',
-        }));
-        setCartItems(normalized);
+  const handleRemove = async (id: number) => {
+    await fetch(`/cart/${id}`, {
+      method: "DELETE",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-TOKEN":
+          document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "",
+      },
+      credentials: "include",
+    });
 
-        const calculatedTotal = normalized.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0,
-        );
-        setTotal(calculatedTotal);
-    };
+    setCartItems((prev) => prev.filter((i) => i.id !== id));
+  };
 
-    useEffect(() => {
-        const fetchCart = async () => {
-            try {
-                const res = await fetch('/api/cart');
-                const data = await res.json();
-
-                if (Array.isArray(data.items)) normalizeCart(data.items);
-                else if (Array.isArray(data.cart))
-                    normalizeCart(Object.values(data.cart));
-                else if (Array.isArray(data)) normalizeCart(data);
-                else {
-                    console.warn('Unexpected cart data format:', data);
-                    setCartItems([]);
-                    setTotal(0);
-                }
-            } catch (error) {
-                console.error('Error fetching cart:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCart();
-    }, []);
-
-    // Remove item
-    const handleRemove = async (id: number) => {
-        try {
-            const res = await fetch(`/cart/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') || '',
-                },
-                credentials: 'include', // 👈 important for session cookies
-            });
-
-            if (res.ok) {
-                const updated = cartItems.filter((item) => item.id !== id);
-                setCartItems(updated);
-                setTotal(
-                    updated.reduce(
-                        (sum, item) => sum + item.price * item.quantity,
-                        0,
-                    ),
-                );
-            } else {
-                console.error('Failed to delete:', await res.text());
-            }
-        } catch (error) {
-            console.error('Error removing item:', error);
-        }
-    };
-
-    // Update quantity
-    const handleQuantityChange = (id: number, newQty: number) => {
-        const updated = cartItems.map((item) =>
-            item.id === id ? { ...item, quantity: newQty } : item,
-        );
-        setCartItems(updated);
-        setTotal(
-            updated.reduce((sum, item) => sum + item.price * item.quantity, 0),
-        );
-    };
-
-    return (
-        <UserLayout title="My Cart">
-            <Head title="My Cart" />
-
-            <div className="flex flex-col gap-6 p-6">
-                <h2 className="text-2xl font-bold text-cyan-800 dark:text-cyan-300">
-                    Shopping Cart
-                </h2>
-
-                {loading ? (
-                    <p className="text-gray-500">Loading your cart...</p>
-                ) : cartItems.length === 0 ? (
-                    <div className="py-10 text-center">
-                        <p className="text-gray-600 dark:text-gray-300">
-                            Your cart is empty.
-                        </p>
-                        <Link
-                            href="/"
-                            className="mt-4 inline-block rounded-lg bg-cyan-600 px-6 py-2 font-medium text-white transition hover:bg-cyan-700"
-                        >
-                            Continue Shopping
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm dark:border-gray-700">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-100 dark:bg-gray-800">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        Product
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        Price
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        Quantity
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        Total
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        Action
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-                                {cartItems.map((item) => (
-                                    <tr key={item.id}>
-                                        <td className="flex items-center gap-4 px-6 py-4">
-                                            {item.image && (
-                                                <img
-                                                    src={getImageUrl(
-                                                        item.image,
-                                                    )}
-                                                    alt={item.name}
-                                                    className="h-16 w-16 rounded-lg object-contain"
-                                                />
-                                            )}
-                                            <span className="font-medium text-gray-800 dark:text-gray-100">
-                                                {item.name}
-                                            </span>
-                                        </td>
-                                        <td className="text-center text-gray-700 dark:text-gray-300">
-                                            ₦{item.price.toLocaleString()}
-                                        </td>
-                                        <td className="text-center">
-                                            <input
-                                                type="number"
-                                                value={item.quantity}
-                                                onChange={(e) =>
-                                                    handleQuantityChange(
-                                                        item.id,
-                                                        parseInt(
-                                                            e.target.value,
-                                                        ) || 1,
-                                                    )
-                                                }
-                                                min="1"
-                                                className="w-16 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-center dark:border-gray-600 dark:bg-gray-800"
-                                            />
-                                        </td>
-                                        <td className="text-center font-semibold text-gray-800 dark:text-gray-100">
-                                            ₦
-                                            {(
-                                                item.price * item.quantity
-                                            ).toLocaleString()}
-                                        </td>
-                                        <td className="text-center">
-                                            <button
-                                                onClick={() =>
-                                                    handleRemove(item.id)
-                                                }
-                                                className="rounded-md bg-red-500 p-2 text-white transition hover:bg-red-600"
-                                                title="Remove"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {cartItems.length > 0 && (
-                    <div className="mt-6 flex flex-col items-end gap-4">
-                        <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                            Total:{' '}
-                            <span className="text-cyan-700 dark:text-cyan-400">
-                                ₦{total.toLocaleString()}
-                            </span>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => router.visit('/checkout')}
-                            className="w-full rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-700 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:outline-none md:w-auto md:text-base dark:focus:ring-offset-gray-900"
-                        >
-                            Proceed to Checkout
-                        </button>
-                    </div>
-                )}
-            </div>
-        </UserLayout>
+  const updateQty = (id: number, delta: number) => {
+    setCartItems((prev) =>
+      prev.map((i) =>
+        i.id === id ? { ...i, quantity: Math.max(1, i.quantity + delta) } : i
+      )
     );
+  };
+
+  const total = useMemo(
+    () => cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
+    [cartItems]
+  );
+
+  return (
+    <UserLayout title="Shopping Cart">
+      <Head title="Shopping Cart" />
+
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <h1 className="mb-8 flex items-center gap-3 text-3xl font-extrabold text-slate-900 dark:text-white">
+          <ShoppingCart className="h-7 w-7 text-cyan-600" />
+          Shopping Cart
+        </h1>
+
+        {loading ? (
+          <div className="text-center text-slate-500">Loading cart…</div>
+        ) : cartItems.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <ShoppingCart className="mx-auto mb-4 h-10 w-10 text-slate-400" />
+            <p className="text-lg font-semibold text-slate-900 dark:text-white">
+              Your cart is empty
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Browse products and add them to your cart.
+            </p>
+            <Link
+              href="/catalog"
+              className="mt-6 inline-block rounded-xl bg-cyan-600 px-6 py-3 font-semibold text-white hover:bg-cyan-700"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
+            {/* Items */}
+            <div className="space-y-5">
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+                >
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-slate-50 dark:bg-gray-800">
+                    {item.image ? (
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">NO IMAGE</span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 flex-col">
+                    <div className="flex items-start justify-between">
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        {item.name}
+                      </h3>
+                      <button
+                        onClick={() => handleRemove(item.id)}
+                        className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      ₦{item.price.toLocaleString()}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-gray-700">
+                        <button onClick={() => updateQty(item.id, -1)}>
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-6 text-center font-semibold">
+                          {item.quantity}
+                        </span>
+                        <button onClick={() => updateQty(item.id, 1)}>
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <span className="text-lg font-bold text-slate-900 dark:text-white">
+                        ₦{(item.price * item.quantity).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Summary */}
+            <div className="sticky top-24 h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+              <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
+                Order Summary
+              </h3>
+
+              <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                <span>Subtotal</span>
+                <span>₦{total.toLocaleString()}</span>
+              </div>
+
+              <div className="my-4 border-t dark:border-gray-700" />
+
+              <div className="flex justify-between text-xl font-extrabold text-slate-900 dark:text-white">
+                <span>Total</span>
+                <span>₦{total.toLocaleString()}</span>
+              </div>
+
+              <button
+                onClick={() => router.visit("/checkout")}
+                className="mt-6 w-full rounded-2xl bg-cyan-600 py-3 font-semibold text-white hover:bg-cyan-700"
+              >
+                Proceed to Checkout
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </UserLayout>
+  );
 }

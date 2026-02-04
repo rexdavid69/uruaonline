@@ -19,5 +19,11 @@
     ],
     "button-type": "off",
     "no-inline-styles": "off"
-  }
+  },
+  "browserslist": [
+    "defaults",
+    "not ie 11",
+    "not firefox <= 115",
+    "not ios_saf <= 15.8"
+  ]
 }

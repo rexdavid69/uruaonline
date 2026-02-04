@@ -1,81 +1,115 @@
-import { Link } from '@inertiajs/react';
-import { Facebook, Instagram, Twitter} from 'lucide-react';
+import { Link } from "@inertiajs/react";
+import { Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
 
 export default function Footer() {
-    return (
-        <footer className="bg-cyan-900 text-white">
-            <div className="container mx-auto px-4 py-12 grid gap-10 md:grid-cols-4">
-                {/* Logo */}
-                <div className="flex flex-col items-start">
-                    <Link href="/">
-                        <img
-                            src="/uruaonline_logo_full.png"
-                            alt="UruaOnline"
-                            className="h-20 w-40 object-contain"
-                        />
-                    </Link>
-                    <p className="mt-4 text-gray-300 text-sm">
-                        Connecting you with reliable technology solutions.
-                    </p>
-                </div>
+  const year = new Date().getFullYear();
 
-                {/* Quick Links */}
-                <div>
-                    <h3 className="mb-4 font-semibold text-lg">Quick Links</h3>
-                    <ul className="space-y-2">
-                        <li>
-                            <Link href="/catalog" className="hover:text-cyan-400 transition">
-                                Catalog
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/contactus" className="hover:text-cyan-400 transition">
-                                Contact Us
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/aboutus" className="hover:text-cyan-400 transition">
-                                About Us
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
+  return (
+    <footer className="bg-gradient-to-b from-slate-50 to-white text-slate-700 dark:from-gray-900 dark:to-gray-950 dark:text-slate-200">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-12 md:grid-cols-3">
+          {/* Brand */}
+          <div>
+            <Link href="/" aria-label="UruaOnline home">
+              <img
+                src="/uruaonline_logo_full.png"
+                alt="UruaOnline"
+                className="h-12 w-auto object-contain"
+              />
+            </Link>
 
-                {/* Newsletter */}
-                <div>
-                    <h3 className="mb-4 font-semibold text-lg">Subscribe</h3>
-                    <form className="flex flex-col gap-3 sm:flex-row">
-                        <input
-                            type="email"
-                            placeholder="Enter your email"
-                            className="w-full rounded-full px-4 py-2 text-gray-900 focus:outline-none"
-                        />
-                        <button className="rounded-full bg-cyan-500 px-6 py-2 hover:bg-cyan-400 transition">
-                            Subscribe
-                        </button>
-                    </form>
-                </div>
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Enterprise & marine connectivity solutions — satellite, cellular,
+              RF and networking equipment from globally trusted manufacturers.
+            </p>
 
-                {/* Social Media */}
-                <div>
-                    <h3 className="mb-4 font-semibold text-lg">Follow Us</h3>
-                    <div className="flex space-x-4">
-                        <a href="#" className="p-2 rounded-full bg-white/10 hover:bg-cyan-400 transition">
-                            <Facebook className="w-6 h-6" />
-                        </a>
-                        <a href="#" className="p-2 rounded-full bg-white/10 hover:bg-cyan-400 transition">
-                            <Twitter className="w-6 h-6" />
-                        </a>
-                        <a href="#" className="p-2 rounded-full bg-white/10 hover:bg-cyan-400 transition">
-                            <Instagram className="w-6 h-6" />
-                        </a>
-                    </div>
-                </div>
+            {/* Social */}
+            <div className="mt-6 flex items-center gap-3">
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white hover:border-cyan-300 hover:text-cyan-600 transition dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+              >
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a
+                href="#"
+                aria-label="Twitter"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white hover:border-cyan-300 hover:text-cyan-600 transition dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+              >
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white hover:border-cyan-300 hover:text-cyan-600 transition dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+              >
+                <Instagram className="h-5 w-5" />
+              </a>
             </div>
+          </div>
 
-            <div className="border-t border-white/20 py-4 text-center text-gray-300 text-sm">
-                © 2025 UruaOnline. All Rights Reserved.
+          {/* Explore */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+              Explore
+            </h3>
+            <ul className="mt-5 space-y-3 text-sm">
+              <li>
+                <Link href="/catalog" className="text-slate-600 hover:text-cyan-700 transition dark:text-slate-400 dark:hover:text-cyan-300">
+                  Catalog
+                </Link>
+              </li>
+              <li>
+                <Link href="/aboutus" className="text-slate-600 hover:text-cyan-700 transition dark:text-slate-400 dark:hover:text-cyan-300">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/contactus" className="text-slate-600 hover:text-cyan-700 transition dark:text-slate-400 dark:hover:text-cyan-300">
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+
+
+          {/* Soft CTA */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900 dark:text-slate-200">
+              Need guidance?
+            </h3>
+
+            <p className="mt-5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Not sure what fits your environment? Get recommendations from our
+              team in minutes.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/contactus"
+                className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-6 py-2 text-sm font-semibold text-white hover:bg-cyan-700 transition"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Get Expert Advice
+              </Link>
+
+              <Link
+                href="/catalog"
+                className="inline-flex items-center rounded-full border border-slate-200 bg-white px-6 py-2 text-sm font-semibold text-slate-800 hover:border-cyan-300 hover:text-cyan-700 transition dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+              >
+                Browse Products
+              </Link>
             </div>
-        </footer>
-    );
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div className="mt-14 border-t border-slate-200 pt-6 text-xs text-center text-slate-500 dark:border-white/10 dark:text-slate-500">
+          © {year} UruaOnline. All rights reserved.
+        </div>
+      </div>
+    </footer>
+  );
 }

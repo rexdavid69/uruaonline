@@ -9,14 +9,12 @@ use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\ProducerController;
 use App\Http\Controllers\Backend\CartController;
 use App\Http\Controllers\Backend\ProductSpecificationController;
+use App\Http\Controllers\Backend\QuoteRequestController;
+use App\Http\Controllers\Backend\NotificationController;
+use App\Http\Controllers\Backend\SettingsController;
+
 
 Route::name('backend.')->prefix('backend')->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔑 Admin Authentication
-    |--------------------------------------------------------------------------
-    */
     Route::middleware('admin.guest')->group(function () {
         Route::get('/auth/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
         Route::post('/auth/login', [AdminAuthController::class, 'login'])->name('login.submit');
@@ -41,12 +39,13 @@ Route::name('backend.')->prefix('backend')->group(function () {
         // 🛒 Products CRUD
         Route::resource('products', ProductController::class)->except(['show']);
 
-        /*
-        |--------------------------------------------------------------------------
-        | ⚙️ Product Specifications Management
-        |--------------------------------------------------------------------------
-        | Nested under products and uses separate update/delete endpoints
-        */
+        Route::resource('quotes', QuoteRequestController::class)
+            ->only(['index', 'show', 'update', 'destroy'])
+            ->names('quotes');
+
+        Route::post('quotes/{quote}/convert-to-order', [QuoteRequestController::class, 'convertToOrder'])
+            ->name('quotes.convert');
+
         Route::prefix('products/{product}')->group(function () {
             Route::get('/specs', [ProductSpecificationController::class, 'index'])->name('products.specs.index');
             Route::post('/specs', [ProductSpecificationController::class, 'store'])->name('products.specs.store');
@@ -56,7 +55,7 @@ Route::name('backend.')->prefix('backend')->group(function () {
 
         // 📦 Orders CRUD
         Route::resource('orders', OrderController::class)
-            ->only(['index', 'show', 'update'])
+            ->only(['index', 'show', 'update', 'destroy'])
             ->names('orders');
 
         // 🛍️ Cart Routes
@@ -65,6 +64,20 @@ Route::name('backend.')->prefix('backend')->group(function () {
         Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
         Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
 
+        //Notifications
+        Route::get('/notifications-page', [NotificationController::class, 'page']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+
+
+        //Settings
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::get('/settings/account', [SettingsController::class, 'account'])->name('settings.account');
+        Route::post('/settings/account', [SettingsController::class, 'updateAccount'])->name('settings.account.update');
+
+        
         // 🚪 Logout
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
     });

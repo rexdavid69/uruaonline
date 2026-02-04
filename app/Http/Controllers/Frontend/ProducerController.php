@@ -10,7 +10,7 @@ class ProducerController extends Controller
     public function show($id)
     {
         return Inertia::render('frontend/producer-products', [
-            'id' => $id,
+            'producerId' => (int) $id,
         ]);
     }
 }

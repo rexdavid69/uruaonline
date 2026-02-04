@@ -16,20 +16,44 @@ class CheckoutController extends Controller
      * Handle checkout and create order
      */
 
-     public function index()
-     {
-         $cart = session('cart', []);
-         $cart = array_values($cart); // <-- important, convert to numerically indexed array
-         $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+    public function index()
+    {
+        $cart = array_values(session('cart', []));
 
-         return Inertia::render('frontend/checkout/index', [
-             'cart' => $cart,
-             'total' => $total,
-         ]);
-     }
+        $hasRfq = collect($cart)->contains(function ($item) {
+            $price = $item['price'] ?? null;
+            return is_null($price) || (is_numeric($price) && $price <= 0);
+        });
+
+        $pricedTotal = collect($cart)->sum(function ($item) {
+            $price = $item['price'] ?? null;
+            if (is_null($price) || (is_numeric($price) && $price <= 0)) return 0;
+            return $price * ($item['quantity'] ?? 1);
+        });
+
+        // ✅ RULE A: any RFQ => quote checkout page
+        if ($hasRfq) {
+            return Inertia::render('frontend/checkout/quote-checkout', [
+                'cart' => $cart,
+                'pricedTotal' => $pricedTotal,
+                'hasRfq' => $hasRfq,
+            ]);
+        }
+
+        // ✅ priced-only => normal checkout
+        return Inertia::render('frontend/checkout/index', [
+            'cart' => $cart,
+            'total' => $pricedTotal,
+            'hasRfq' => $hasRfq,
+        ]);
+    }
+
 
 
     public function store(Request $request)
+
+
+
     {
         $validated = $request->validate([
             'cart' => 'required|array|min:1',
@@ -90,8 +114,13 @@ class CheckoutController extends Controller
             session()->forget('cart');
 
 
-            // If request expects JSON (API/AJAX), return JSON
-            if ($request->wantsJson() || $request->ajax()) {
+            // ✅ Inertia request? must redirect (or Inertia::location)
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('checkout.thankyou')->with('order_id', $order->id);
+            }
+
+            // ✅ Only return JSON for non-Inertia API consumers
+            if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Order created successfully!',
                     'order_id' => $order->id,
@@ -99,7 +128,6 @@ class CheckoutController extends Controller
                 ], 201);
             }
 
-            // For normal web flow: redirect to thank-you and pass order id in session
             return redirect()->route('checkout.thankyou')->with('order_id', $order->id);
         } catch (\Throwable $e) {
             DB::rollBack();

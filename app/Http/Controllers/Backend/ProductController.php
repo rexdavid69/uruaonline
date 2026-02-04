@@ -123,6 +123,13 @@ class ProductController extends Controller
             'producer_id' => 'required|exists:producers,id',
         ]);
 
+        if ($request->filled('price')) {
+            $request->merge([
+                'price' => str_replace(',', '', (string) $request->input('price')),
+            ]);
+        }
+
+
         // Handle image update
         if ($request->hasFile('image')) {
             // Delete old image if exists

@@ -21,4 +21,10 @@ class AppServiceProvider extends ServiceProvider
 {
     Schema::defaultStringLength(191);
 }
+
+
+protected $policies = [
+    \App\Models\Order::class => \App\Policies\OrderPolicy::class,
+];
+
 }

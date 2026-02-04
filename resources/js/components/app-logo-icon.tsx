@@ -5,7 +5,7 @@ interface AppLogoIconProps {
   export default function AppLogoIcon({ className = "" }: AppLogoIconProps) {
     return (
       <img
-        src="/uruaonline_logo_full.png"
+        src="/uruaonline.png"
         alt="Uruaonline Logo"
         className={`object-contain cursor-pointer ${className}`}
       />

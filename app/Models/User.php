@@ -15,17 +15,26 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // added
+        'role',
+        'phone',
+        'company_name',
+        'job_title',
+        'country',
+        'state',
+        'city',
+        'address_line1',
+        'address_line2',
+        'postal_code',
+        'preferred_contact',
+        'timezone',
+        'locale',
+        'notification_preferences',
     ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
+    
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'notification_preferences' => 'array',
     ];
 
     // Check if user is admin

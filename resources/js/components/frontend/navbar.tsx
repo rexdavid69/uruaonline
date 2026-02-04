@@ -4,10 +4,7 @@ import { type SharedData } from "@/types";
 import { Link, usePage } from "@inertiajs/react";
 import {
   ChevronDown,
-  Home,
   Moon,
-  Package,
-  Phone,
   Sun,
   User,
   ShoppingCart,
@@ -18,104 +15,100 @@ import AppLogo from "../app-logo";
 import CartDrawer from "@/components/frontend/cart-drawer";
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const { appearance, updateAppearance } = useAppearance();
   const { url, props } = usePage<SharedData>();
   const { auth } = props;
 
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [cartOpen, setCartOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
-  const fetchCartCount = async () => {
-    try {
-      const res = await fetch("/api/cart");
-      const data = await res.json();
-      const items = Array.isArray(data)
-        ? data
-        : Array.isArray(data.cart)
-        ? data.cart
-        : Array.isArray(data.items)
-        ? data.items
-        : [];
-      const total = items.reduce(
-        (sum: number, item: any) => sum + (item.quantity || 0),
-        0
-      );
-      setCartCount(total);
-    } catch (error) {
-      console.error("Cart count fetch error:", error);
-    }
-  };
-
+  /* ---------------- Cart Count ---------------- */
   useEffect(() => {
-    fetchCartCount();
+    fetch("/api/cart")
+      .then((res) => res.json())
+      .then((data) => {
+        const items = Array.isArray(data?.cart) ? data.cart : [];
+        const total = items.reduce(
+          (sum: number, item: any) => sum + (item.quantity || 0),
+          0
+        );
+        setCartCount(total);
+      })
+      .catch(() => {});
   }, [cartOpen]);
+
+  /* ---------------- Scroll Effect ---------------- */
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const toggleTheme = () => {
     updateAppearance(appearance === "light" ? "dark" : "light");
   };
-
-  // Scroll tracking
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const navLinks = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/catalog", label: "Catalog", icon: Package },
-    { href: "/contactus", label: "Contact", icon: Phone },
-  ];
 
   return (
     <>
       <nav
         className={`sticky top-0 z-50 w-full transition-all duration-300 ${
           scrolled
-            ? "bg-gradient-to-r from-cyan-600 to-blue-900 py-2 shadow-md"
-            : "bg-gradient-to-r from-cyan-700 to-blue-950 py-4"
+            ? "bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-900/80"
+            : "bg-gradient-to-r from-cyan-700 to-blue-950"
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
-          {/* Left: Logo */}
-          <div className="flex items-center flex-shrink-0">
-            <Link href="/" aria-label="Go to homepage">
-              <AppLogo size="h-20 w-auto" />
+        <div className="mx-auto flex h-25 max-w-7xl items-center justify-between px-6">
+          {/* Logo */}
+          <Link href="/" aria-label="UruaOnline Home">
+            <AppLogo size="h-30 w-auto" />
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex items-center gap-8">
+            <Link
+              href="/"
+              className={`text-sm font-medium transition ${
+                url === "/" ? "text-cyan-400" : "text-white hover:text-cyan-300"
+              }`}
+            >
+              Home
+            </Link>
+
+            <Link
+              href="/contactus"
+              className={`text-sm font-medium transition ${
+                url === "/contactus"
+                  ? "text-cyan-400"
+                  : "text-white hover:text-cyan-300"
+              }`}
+            >
+              Contact
+            </Link>
+
+            {/* Primary CTA */}
+            <Link
+              href="/catalog"
+              className="rounded-full bg-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-cyan-600 transition"
+            >
+              Browse Catalog
             </Link>
           </div>
 
-          {/* Center: Nav Links */}
-          <div className="hidden lg:flex items-center space-x-10 text-white font-semibold uppercase tracking-wide">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-1 border-b-2 pb-1 transition-colors ${
-                  url === link.href
-                    ? "border-white text-cyan-200"
-                    : "border-transparent hover:border-cyan-200 hover:text-cyan-100"
-                }`}
-              >
-                <link.icon className="h-6 w-6 text-cyan-200" />
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Right: Icons and Auth */}
-          <div className="hidden lg:flex items-center gap-6 text-white">
+          {/* Right Actions */}
+          <div className="hidden lg:flex items-center gap-5">
             {/* Cart */}
             <button
               onClick={() => setCartOpen(true)}
-              className="relative text-white hover:text-cyan-200 transition"
+              className="relative text-white hover:text-cyan-300 transition"
             >
-              <ShoppingCart className="h-7 w-7" />
+              <ShoppingCart className="h-6 w-6" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold">
                   {cartCount}
                 </span>
               )}
@@ -125,7 +118,7 @@ export default function Navbar() {
             {!auth.user ? (
               <Link
                 href="/login"
-                className="rounded-md bg-cyan-500 px-4 py-2 font-semibold text-white transition hover:bg-cyan-600"
+                className="text-sm font-medium text-white hover:text-cyan-300 transition"
               >
                 Login
               </Link>
@@ -133,23 +126,22 @@ export default function Navbar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 font-semibold text-white focus:outline-none"
-                  aria-expanded={dropdownOpen}
-                  aria-haspopup="menu"
+                  className="flex items-center gap-2 text-sm font-medium text-white hover:text-cyan-300 transition"
                 >
-                  <User className="h-7 w-7" />
-                  <span>{auth.user.name}</span>
+                  <User className="h-5 w-5" />
+                  {auth.user.name}
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
+                    className={`h-4 w-4 transition ${
                       dropdownOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
+
                 {dropdownOpen && (
-                  <div className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white text-gray-800 shadow-lg">
+                  <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg dark:bg-gray-800">
                     <Link
                       href="/dashboard"
-                      className="block px-4 py-2 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Dashboard
                     </Link>
@@ -157,7 +149,7 @@ export default function Navbar() {
                       href="/logout"
                       method="post"
                       as="button"
-                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                      className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Logout
                     </Link>
@@ -166,133 +158,59 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Theme Toggle */}
+            {/* Theme */}
             <button
               onClick={toggleTheme}
-              aria-label="Toggle Light / Dark Mode"
-              className="rounded-full p-2 text-white transition hover:bg-cyan-800/30"
+              className="rounded-full p-2 text-white hover:bg-white/10 transition"
             >
               {appearance === "light" ? (
-                <Moon className="h-6 w-6" />
+                <Moon className="h-5 w-5" />
               ) : (
-                <Sun className="h-6 w-6 text-yellow-300" />
+                <Sun className="h-5 w-5 text-yellow-300" />
               )}
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center space-x-4 lg:hidden">
-            <button
-              onClick={() => setCartOpen(true)}
-              className="relative text-white hover:text-cyan-200"
-            >
-              <ShoppingCart className="h-7 w-7" />
+          {/* Mobile */}
+          <div className="flex lg:hidden items-center gap-4">
+            <button onClick={() => setCartOpen(true)} className="relative text-white">
+              <ShoppingCart className="h-6 w-6" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-600 text-xs flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
             </button>
 
             <button
-              onClick={toggleTheme}
-              aria-label="Toggle Light / Dark Mode"
-              className="rounded-full p-2 text-white transition hover:bg-cyan-800/30"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-white"
             >
-              {appearance === "light" ? (
-                <Moon className="h-6 w-6" />
-              ) : (
-                <Sun className="h-6 w-6 text-yellow-300" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle navigation menu"
-              className="rounded-md p-2 text-white transition hover:bg-cyan-800/30"
-            >
-              {isOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
+              {menuOpen ? <X /> : <span className="text-xl">☰</span>}
             </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-            onClick={() => setIsOpen(false)}
-          >
-            <div
-              className="absolute top-0 right-0 h-full w-64 space-y-6 bg-gradient-to-b from-cyan-700 to-blue-950 p-6 text-white shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-2 text-lg font-semibold transition ${
-                    url === link.href
-                      ? "text-cyan-200"
-                      : "hover:text-cyan-300"
-                  }`}
-                >
-                  <link.icon className="h-6 w-6 text-cyan-300" />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
-
-              {!auth.user ? (
-                <div className="mt-6 flex flex-col gap-2">
-                  <Link
-                    href="/login"
-                    className="rounded-md bg-cyan-500 px-4 py-2 text-center font-semibold text-white"
-                  >
-                    Login
-                  </Link>
-                </div>
-              ) : (
-                <div className="mt-6 flex flex-col gap-2">
-                  <Link
-                    href="/dashboard"
-                    className="rounded-md bg-cyan-500 px-4 py-2 text-center font-semibold text-white"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    className="rounded-md border border-white px-4 py-2 text-center font-semibold text-white"
-                  >
-                    Logout
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
 
-      {/* 🛒 Cart Drawer */}
-      {cartOpen && (
-        <CartDrawer onClose={() => setCartOpen(false)} />
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden">
+          <div className="absolute right-0 top-0 h-full w-72 bg-gray-900 p-6 text-white">
+            <nav className="flex flex-col gap-6">
+              <Link href="/">Home</Link>
+              <Link href="/contactus">Contact</Link>
+              <Link
+                href="/catalog"
+                className="rounded-full bg-cyan-500 px-4 py-2 text-center font-semibold"
+              >
+                Browse Catalog
+              </Link>
+            </nav>
+          </div>
+        </div>
       )}
+
+      {cartOpen && <CartDrawer onClose={() => setCartOpen(false)} />}
     </>
   );
 }

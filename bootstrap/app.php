@@ -28,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // 🔐 Cookie & Session Setup
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-
+$middleware->append(\App\Http\Middleware\TrustProxies::class);
         // 🌍 Global Web Middleware
         $middleware->web(append: [
             HandleAppearance::class,

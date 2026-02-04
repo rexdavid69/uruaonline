@@ -20,6 +20,10 @@ class Product extends Model
         'producer_category_id',
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+    ];
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class);

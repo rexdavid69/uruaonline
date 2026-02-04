@@ -38,8 +38,4 @@ class Order extends Model
     {
         return $this->hasOne(Payment::class);
     }
-    public function view(User $user, Order $order)
-{
-    return $user->id === $order->user_id;
-}
 }

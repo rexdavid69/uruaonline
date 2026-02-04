@@ -1,198 +1,366 @@
-import { ReactNode, useState, useEffect } from "react";
-import { Link, usePage } from "@inertiajs/react";
+/* eslint-disable no-empty */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import AppLogo from '@/components/app-logo';
+import { Link, usePage } from '@inertiajs/react';
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Settings,
-  ChevronDown,
-  UserCog,
-  Sun,
-  Moon,
-  User,
-} from "lucide-react";
-import AppLogo from "@/components/app-logo";
-import { PageProps as InertiaPageProps } from "@inertiajs/core";
+    Bell,
+    ChevronDown,
+    FileText,
+    LayoutDashboard,
+    Moon,
+    Package,
+    Settings,
+    ShoppingCart,
+    Sun,
+    User,
+    UserCog,
+} from 'lucide-react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 interface BackendLayoutProps {
-  children: ReactNode;
-  title?: string;
+    children: ReactNode;
+    title?: string;
 }
 
-interface PageProps extends InertiaPageProps {
-  auth: {
-    user: {
-      name: string;
-      email: string;
+interface PageProps {
+    auth: {
+        user: {
+            name: string;
+            email: string;
+        };
     };
-  };
 }
 
-export default function BackendLayout({ children }: BackendLayoutProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [productsOpen, setProductsOpen] = useState(false);
+function cx(...classes: Array<string | false | null | undefined>) {
+    return classes.filter(Boolean).join(' ');
+}
 
-  const { props } = usePage<PageProps>();
-  const username = props.auth?.user?.name || "Admin";
+export default function BackendLayout({
+    children,
+    title = 'Dashboard',
+}: BackendLayoutProps) {
+    const { props, url } = usePage<PageProps>();
 
-  // Load saved theme
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      document.documentElement.classList.add("dark");
-      setTheme("dark");
-    }
-  }, []);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [productsOpen, setProductsOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
 
-  // Toggle theme and save to localStorage
-  const toggleTheme = () => {
-    if (theme === "light") {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setTheme("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setTheme("light");
-    }
-  };
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
-  return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-sm flex flex-col transition-colors duration-300">
-        {/* Logo */}
-        <div className="flex-shrink-0 flex items-center justify-center h-20 border-b dark:border-gray-700">
-          <Link href="/backend/dashboard" aria-label="Go to Admin Dashboard">
-            <AppLogo size="h-14 w-auto" />
-          </Link>
-        </div>
+    const username = props.auth?.user?.name ?? 'Admin';
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          <Link
-            href="/backend/dashboard"
-            className="flex items-center gap-2 p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <LayoutDashboard className="w-5 h-5" /> Dashboard
-          </Link>
+    const currentPath = useMemo(() => (url || '').split('?')[0], [url]);
 
-          <Link
-            href="/backend/users"
-            className="flex items-center gap-2 p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <User className="w-5 h-5" /> Users
-          </Link>
+    const isActive = (path: string) =>
+        currentPath === path || currentPath.startsWith(path + '/');
 
-          {/* Products Dropdown */}
-          <div className="space-y-1">
-            <button
-              onClick={() => setProductsOpen(!productsOpen)}
-              className="flex w-full items-center justify-between p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+    /* -------------------- THEME -------------------- */
+    useEffect(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.documentElement.classList.add('dark');
+            setTheme('dark');
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        document.documentElement.classList.toggle('dark');
+        const next = theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', next);
+        setTheme(next);
+    };
+
+    /* -------------------- NOTIFICATIONS -------------------- */
+    const fetchNotifications = async () => {
+        try {
+            const res = await fetch('/backend/notifications', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            setNotifications(data.items ?? []);
+            setUnreadCount(data.unreadCount ?? 0);
+        } catch {}
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 15000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const markAllRead = async () => {
+        await fetch('/backend/notifications/read-all', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN':
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement
+                    )?.content ?? '',
+            },
+            credentials: 'same-origin',
+        });
+        fetchNotifications();
+    };
+
+    /* -------------------- UI COMPONENTS -------------------- */
+    const NavItem = ({
+        href,
+        icon,
+        label,
+    }: {
+        href: string;
+        icon: ReactNode;
+        label: string;
+    }) => {
+        const active = isActive(href);
+        return (
+            <Link
+                href={href}
+                className={cx(
+                    'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition',
+                    active
+                        ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
+                )}
             >
-              <span className="flex items-center gap-2">
-                <Package className="w-5 h-5" /> Products
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  productsOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-100 dark:bg-gray-900">
+                    {icon}
+                </span>
+                {label}
+            </Link>
+        );
+    };
 
-            <div
-              className={`ml-6 overflow-hidden transition-all duration-300 ${
-                productsOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
-              <Link
-                href="/backend/products"
-                className="block p-2 rounded-md text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                All Products
-              </Link>
-              <Link
-                href="/backend/producers"
-                className="block p-2 rounded-md text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              >
-                Producers
-              </Link>
-            </div>
-          </div>
+    /* -------------------- AUTO OPEN PRODUCTS -------------------- */
+    useEffect(() => {
+        if (isActive('/backend/products') || isActive('/backend/producers')) {
+            setProductsOpen(true);
+        }
+    }, [currentPath, isActive]);
 
-          <Link
-            href="/backend/orders"
-            className="flex items-center gap-2 p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <ShoppingCart className="w-5 h-5" /> Orders
-          </Link>
+    return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <div className="flex">
+                {/* ================= SIDEBAR ================= */}
+                <aside className="hidden w-72 flex-col border-r border-gray-200 bg-white lg:flex dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex h-20 items-center gap-3 border-b px-6 dark:border-gray-800">
+                        <AppLogo size="h-12" />
+                        <div>
+                            <div className="text-sm font-semibold">Admin</div>
+                            <div className="text-xs text-gray-500">
+                                UruaOnline
+                            </div>
+                        </div>
+                    </div>
 
-          <Link
-            href="/backend/settings"
-            className="flex items-center gap-2 p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <Settings className="w-5 h-5" /> Settings
-          </Link>
-        </nav>
-      </aside>
+                    <nav className="flex-1 space-y-2 p-4">
+                        <NavItem
+                            href="/backend/dashboard"
+                            label="Dashboard"
+                            icon={<LayoutDashboard className="h-5 w-5" />}
+                        />
 
-      {/* Main Section */}
-      <div className="flex-1 flex flex-col">
-        {/* Navbar */}
-        <header className="flex justify-between items-center bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-6 py-4 shadow-sm relative transition-colors duration-300">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100"></h1>
+                        <NavItem
+                            href="/backend/notifications-page"
+                            label="Notifications"
+                            icon={<Bell className="h-5 w-5" />}
+                        />
 
-          <div className="flex items-center gap-4">
-            {/* Theme Switcher */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-              aria-label="Toggle Theme"
-            >
-              {theme === "light" ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
-              )}
-            </button>
+                        <NavItem
+                            href="/backend/users"
+                            label="Users"
+                            icon={<User className="h-5 w-5" />}
+                        />
 
-            {/* User Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 text-gray-700 dark:text-gray-200 focus:outline-none"
-              >
-                <UserCog className="w-5 h-5" />
-                <span className="font-medium">Welcome, {username}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    dropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+                        {/* Products */}
+                        <button
+                            onClick={() => setProductsOpen(!productsOpen)}
+                            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                            <span className="flex items-center gap-3">
+                                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-100 dark:bg-gray-900">
+                                    <Package className="h-5 w-5" />
+                                </span>
+                                Products
+                            </span>
+                            <ChevronDown
+                                className={cx(
+                                    'h-4 w-4 transition',
+                                    productsOpen && 'rotate-180',
+                                )}
+                            />
+                        </button>
 
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50">
-                  <Link
-                    href="/backend/logout"
-                    method="post"
-                    as="button"
-                    className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                  >
-                    Logout
-                  </Link>
+                        {productsOpen && (
+                            <div className="ml-12 space-y-1">
+                                <Link
+                                    href="/backend/products"
+                                    className={cx(
+                                        'block rounded-lg px-3 py-2 text-sm',
+                                        isActive('/backend/products')
+                                            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                                            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+                                    )}
+                                >
+                                    All Products
+                                </Link>
+                                <Link
+                                    href="/backend/producers"
+                                    className={cx(
+                                        'block rounded-lg px-3 py-2 text-sm',
+                                        isActive('/backend/producers')
+                                            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                                            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+                                    )}
+                                >
+                                    Producers
+                                </Link>
+                            </div>
+                        )}
+
+                        <NavItem
+                            href="/backend/orders"
+                            label="Orders"
+                            icon={<ShoppingCart className="h-5 w-5" />}
+                        />
+
+                        <NavItem
+                            href="/backend/quotes"
+                            label="Quotes"
+                            icon={<FileText className="h-5 w-5" />}
+                        />
+
+                        <NavItem
+                            href="/backend/settings"
+                            label="Settings"
+                            icon={<Settings className="h-5 w-5" />}
+                        />
+                    </nav>
+                </aside>
+
+                {/* ================= MAIN ================= */}
+                <div className="flex flex-1 flex-col">
+                    {/* Topbar */}
+                    <header className="sticky top-0 z-40 border-b bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-lg font-bold">{title}</h1>
+
+                            <div className="flex items-center gap-3">
+                                {/* Notifications */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setNotifOpen(!notifOpen)}
+                                        className="relative rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <Bell className="h-5 w-5" />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute -top-1 -right-1 rounded-full bg-red-600 px-1 text-xs text-white">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {notifOpen && (
+                                        <div className="absolute right-0 mt-2 w-80 rounded-xl bg-white shadow-lg dark:bg-gray-900">
+                                            <div className="flex items-center justify-between px-4 py-3">
+                                                <span className="text-sm font-semibold">
+                                                    Notifications
+                                                </span>
+                                                <button
+                                                    onClick={markAllRead}
+                                                    className="text-xs text-gray-500 hover:text-gray-900"
+                                                >
+                                                    Mark all read
+                                                </button>
+                                            </div>
+
+                                            <div className="max-h-80 overflow-auto border-t dark:border-gray-800">
+                                                {notifications.length === 0 ? (
+                                                    <div className="p-4 text-sm text-gray-500">
+                                                        No notifications
+                                                    </div>
+                                                ) : (
+                                                    notifications.map((n) => (
+                                                        <div
+                                                            key={n.id}
+                                                            className="border-b px-4 py-3 text-sm dark:border-gray-800"
+                                                        >
+                                                            <div className="font-semibold">
+                                                                {n.title}
+                                                            </div>
+                                                            {n.message && (
+                                                                <div className="text-gray-500">
+                                                                    {n.message}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Theme */}
+                                <button
+                                    onClick={toggleTheme}
+                                    className="rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    {theme === 'light' ? (
+                                        <Moon className="h-5 w-5" />
+                                    ) : (
+                                        <Sun className="h-5 w-5" />
+                                    )}
+                                </button>
+
+                                {/* User */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() =>
+                                            setUserMenuOpen(!userMenuOpen)
+                                        }
+                                        className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <UserCog className="h-5 w-5" />
+                                        <span className="hidden sm:block">
+                                            {username}
+                                        </span>
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+
+                                    {userMenuOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg dark:bg-gray-900">
+                                            <Link
+                                                href="/backend/logout"
+                                                method="post"
+                                                as="button"
+                                                className="block w-full px-4 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                            >
+                                                Logout
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Content */}
+                    <main className="flex-1 p-6">
+                        <div className="rounded-3xl bg-white p-6 shadow-sm dark:bg-gray-900">
+                            {children}
+                        </div>
+                    </main>
                 </div>
-              )}
             </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+        </div>
+    );
 }

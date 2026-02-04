@@ -5,6 +5,8 @@ use App\Http\Controllers\Frontend\ProducerController;
 use App\Http\Controllers\Frontend\CartController;
 use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\OrderController;
+use App\Http\Controllers\Frontend\QuoteCheckoutController;
+use App\Http\Controllers\Frontend\QuoteRequestController;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Cart;
@@ -24,7 +26,7 @@ use Inertia\Inertia;
 Route::get('/', fn() => Inertia::render('welcome'))->name('home');
 
 // Contact Page
-Route::get('/contactus', fn() => Inertia::render('frontend/contactus'))->name('contactus');
+Route::get('/contactus', action: fn() => Inertia::render('frontend/contactus'))->name('contactus');
 Route::get('/aboutus', fn() => Inertia::render('frontend/aboutus'))->name('aboutus');
 
 // Catalog & Producers
@@ -40,6 +42,8 @@ Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.dest
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/quote-checkout', [QuoteCheckoutController::class, 'store'])->name('quote.checkout.store');
+Route::get('/quote-thank-you', [QuoteCheckoutController::class, 'thankYou'])->name('quote.thankyou');
 
 // Thank You Page
 Route::get('/thank-you', fn() => Inertia::render('frontend/checkout/thank-you'))->name('checkout.thankyou');
@@ -70,6 +74,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // My Orders
     Route::get('/my-orders', [OrderController::class, 'index'])->name('frontend.orders.index');
     Route::get('/my-orders/{order}', [OrderController::class, 'show'])->name('frontend.orders.show');
+
+    //My Quotes
+    Route::get('/my-quotes', [QuoteRequestController::class, 'index'])->name('quotes.index');
+    Route::get('/my-quotes/{quote}', [QuoteRequestController::class, 'show'])->name('quotes.show');
+
+    //Settings 
+    Route::patch('/settings/account', [\App\Http\Controllers\Settings\AccountController::class, 'update'])
+        ->name('settings.account.update');
+
+    Route::get('/settings/account', fn() => Inertia::render('settings/account'))
+        ->name('settings.account');
+
+        
+    Route::get('/settings/security', function () {
+        return Inertia::render('settings/security');
+    })->name('settings.security');
 });
 
 // ------------------ Backend / Admin Routes ------------------

@@ -9,23 +9,35 @@ use Inertia\Inertia;
 
 class CartController extends Controller
 {
-    // 🛒 Inertia Cart Page
+
     public function index(Request $request)
     {
         $cart = $request->session()->get('cart', []);
-        $total = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
 
-        // ✅ This must return an Inertia page
+        $hasRfq = collect($cart)->contains(function ($item) {
+            $price = $item['price'] ?? null;
+            return is_null($price) || (is_numeric($price) && $price <= 0);
+        });
+
+        $pricedTotal = collect($cart)->sum(function ($item) {
+            $price = $item['price'] ?? null;
+            if (is_null($price) || (is_numeric($price) && $price <= 0)) return 0;
+            return $price * ($item['quantity'] ?? 1);
+        });
+
         return Inertia::render('frontend/cart', [
             'items' => array_values($cart),
-            'total' => $total,
+            'pricedTotal' => $pricedTotal, // ✅ priced items only
+            'hasRfq' => $hasRfq,
         ]);
     }
 
-    // ➕ Add to Cart (AJAX/JSON)
+
     public function store(Request $request)
     {
-        $product = Product::findOrFail($request->id);
+        $productId = $request->input('product_id') ?? $request->input('id');
+        $product = Product::findOrFail($productId);
+
         $cart = $request->session()->get('cart', []);
 
         if (isset($cart[$product->id])) {
@@ -34,7 +46,7 @@ class CartController extends Controller
             $cart[$product->id] = [
                 'id' => $product->id,
                 'name' => $product->name,
-                'price' => $product->price,
+                'price' => $product->price, // nullable ok
                 'quantity' => 1,
                 'image' => $product->image,
             ];
@@ -48,7 +60,7 @@ class CartController extends Controller
         ]);
     }
 
-    // ❌ Remove Item (AJAX)
+
     public function destroy(Request $request, $id)
     {
         $cart = $request->session()->get('cart', []);
@@ -62,7 +74,6 @@ class CartController extends Controller
     }
 
 
-    // 🧹 Clear Cart (AJAX)
     public function clear(Request $request)
     {
         $request->session()->forget('cart');

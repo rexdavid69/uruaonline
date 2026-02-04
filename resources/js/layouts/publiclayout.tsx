@@ -11,13 +11,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({
         <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
             {/* Navbar */}
             <Navbar />
-
-            <div className="flex flex-1 gap-10 px-6 py-10">
-                {/* Main Content */}
-                <main className="flex-1 rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800">
-                    {children}
-                </main>
-            </div>
+            <div className="flex-1">{children}</div>
 
             {/* Footer */}
             <Footer />
