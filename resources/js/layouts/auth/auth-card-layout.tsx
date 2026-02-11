@@ -1,48 +1,56 @@
-import AppLogoIcon from '@/components/app-logo-icon';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { home } from '@/routes';
-import { Link } from '@inertiajs/react';
-import { type PropsWithChildren } from 'react';
+import AppLogoIcon from "@/components/app-logo-icon";
+import { home } from "@/routes";
+import { Link } from "@inertiajs/react";
+import { type PropsWithChildren } from "react";
 
 export default function AuthCardLayout({
-    children,
-    title,
-    description,
+  children,
+  title,
+  description,
 }: PropsWithChildren<{
-    name?: string;
-    title?: string;
-    description?: string;
+  name?: string;
+  title?: string;
+  description?: string;
 }>) {
-    return (
-        <div className="flex min-h-screen items-center justify-center px-4
-                        bg-gradient-to-tr from-[#00c6ff] via-[#0072ff] to-[#005bea]">
-            <div className="w-full max-w-md flex flex-col gap-6">
-                {/* Logo */}
-                <Link
-                    href={home()}
-                    className="flex items-center gap-2 self-center font-medium"
-                >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full
-                                    transition-transform duration-300 hover:scale-110 bg-white shadow-md">
-                        <AppLogoIcon className="size-9 fill-current text-[#0072ff]" />
-                    </div>
-                </Link>
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4">
+      {/* soft glow background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-600/20 blur-3xl" />
+        <div className="absolute bottom-0 right-1/3 h-[420px] w-[420px] rounded-full bg-blue-600/20 blur-3xl" />
+      </div>
 
-                {/* Card */}
-                <Card className="rounded-2xl shadow-2xl hover:shadow-3xl transition-shadow duration-300">
-                    <CardHeader className="px-10 pt-8 pb-0 text-center">
-                        <CardTitle className="text-2xl font-semibold text-gray-800">{title}</CardTitle>
-                        <CardDescription className="text-gray-500">{description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-10 py-8">{children}</CardContent>
-                </Card>
+      <div className="relative w-full max-w-md">
+        {/* Logo */}
+        <div className="mb-6 flex justify-center">
+          <Link href={home()} aria-label="Go to homepage" className="group">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur transition group-hover:scale-105">
+              <AppLogoIcon className="h-10 w-10 text-white" />
             </div>
+          </Link>
         </div>
-    );
+
+        {/* Card */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl dark:border-gray-800 dark:bg-gray-900 md:p-10">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {title}
+            </h1>
+            {description && (
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {description}
+              </p>
+            )}
+          </div>
+
+          {children}
+        </div>
+
+        {/* tiny footer */}
+        <p className="mt-5 text-center text-xs text-slate-400">
+          UruaOnline • Secure authentication
+        </p>
+      </div>
+    </div>
+  );
 }

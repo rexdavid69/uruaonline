@@ -30,4 +30,10 @@ class QuoteRequest extends Model
     return $this->belongsTo(User::class);
 }
 
+public function convertedOrder()
+{
+    return $this->belongsTo(\App\Models\Order::class, 'converted_order_id');
+}
+
+
 }

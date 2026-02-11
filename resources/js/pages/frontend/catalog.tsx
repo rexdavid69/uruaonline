@@ -20,21 +20,21 @@ export default function CatalogPage() {
   const { props } = usePage<PageProps>();
   const [q, setQ] = useState("");
 
-  const APP_URL = import.meta.env.VITE_APP_URL || "https://need-plots-worthy-marble.trycloudflare.com";
+const APP_URL = (import.meta.env.VITE_APP_URL as string) || window.location.origin;
  const getImageUrl = (path?: string) => {
-    if (!path) return '';
+  if (!path) return '';
 
-    // If API mistakenly returns localhost links, force them to use the public APP_URL
-    if (path.startsWith('http://127.0.0.1:8000')) {
-        return path.replace('http://127.0.0.1:8000', APP_URL);
-    }
+  // already absolute (http/https)
+  if (/^https?:\/\//i.test(path)) return path;
 
-    // If it’s already a full https/http URL (not localhost), keep it
-    if (path.startsWith('http')) return path;
+  // normalize common storage path formats coming from API/DB
+  const clean = path.replace(/^\/+/, '').replace(/^storage\//, '');
 
-    // Otherwise treat it as a storage path
-    return `${APP_URL}/storage/${path.replace(/^storage\/|^public\//, '')}`;
+  // if your DB sometimes stores "producers/xxx.png"
+  // or "storage/producers/xxx.png"
+  return `${APP_URL}/storage/${clean}`;
 };
+
 
 
   const producers = useMemo(() => {

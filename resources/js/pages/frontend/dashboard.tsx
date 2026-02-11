@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import UserLayout from "@/layouts/frontend/user-layout";
+import NotificationBell from "@/components/frontend/notification-bell";
 import { Head, Link, usePage } from "@inertiajs/react";
 import {
   ShoppingCart,
@@ -46,13 +47,20 @@ export default function Dashboard() {
       <div className="space-y-10">
         {/* ================= WELCOME ================= */}
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            Welcome back, {user?.name ?? "Guest"} 👋
-          </h2>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Here’s a snapshot of your account activity and recent orders.
-          </p>
-        </div>
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+        Welcome back, {user?.name ?? "Guest"} 👋
+      </h2>
+      <p className="mt-2 text-slate-600 dark:text-slate-400">
+        Here’s a snapshot of your account activity and recent orders.
+      </p>
+    </div>
+
+    <NotificationBell />
+  </div>
+</div>
+
 
         {/* ================= STATS ================= */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,12 +1,12 @@
 /* --------------------------------------------------
    SELF-HOSTED FONTS
-   (Place .woff2 files inside: public/fonts)
+   (Place .woff2 files inside: resources/fonts)
 -------------------------------------------------- */
 
 /* Pilcrow Rounded — default site font */
 @font-face {
     font-family: 'PilcrowRounded';
-    src: url('/fonts/PilcrowRounded-Regular.woff2') format('woff2');
+    src: url('../fonts/PilcrowRounded-Regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -14,7 +14,7 @@
 
 @font-face {
     font-family: 'PilcrowRounded';
-    src: url('/fonts/PilcrowRounded-Medium.woff2') format('woff2');
+    src: url('../fonts/PilcrowRounded-Medium.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
     font-display: swap;
@@ -22,7 +22,7 @@
 
 @font-face {
     font-family: 'PilcrowRounded';
-    src: url('/fonts/PilcrowRounded-Bold.woff2') format('woff2');
+    src: url('../fonts/PilcrowRounded-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
@@ -31,7 +31,7 @@
 /* Hoover — headings font */
 @font-face {
     font-family: 'Hoover';
-    src: url('/fonts/Hoover-Regular.woff2') format('woff2');
+    src: url('../fonts/Hoover-Regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -39,7 +39,7 @@
 
 @font-face {
     font-family: 'Hoover';
-    src: url('/fonts/Hoover-Medium.woff2') format('woff2');
+    src: url('../fonts/Hoover-Medium.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
     font-display: swap;
@@ -47,7 +47,7 @@
 
 @font-face {
     font-family: 'Hoover';
-    src: url('/fonts/Hoover-Bold.woff2') format('woff2');
+    src: url('../fonts/Hoover-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;

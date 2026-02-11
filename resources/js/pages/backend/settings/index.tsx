@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import BackendLayout from '@/layouts/backend/backend-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { useMemo } from 'react';

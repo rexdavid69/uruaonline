@@ -20,9 +20,8 @@ class ShippingAddress extends Model
         'country',
     ];
 
-    // 🧩 Relationships
-    public function order()
+   public function order()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(\App\Models\Order::class);
     }
 }

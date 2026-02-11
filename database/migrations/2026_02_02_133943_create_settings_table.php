@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+            if (!Schema::hasTable('settings')) {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
         
@@ -25,6 +26,7 @@ return new class extends Migration {
             $table->index(['group', 'key']);
         });
         
+    }
     }
 
     public function down(): void

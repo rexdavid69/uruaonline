@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
-import { useForm, Link, router } from "@inertiajs/react";
+import React, { useMemo } from "react";
+import UserLayout from "@/layouts/frontend/user-layout";
+import { router, useForm, usePage, Link } from "@inertiajs/react";
+import { type SharedData } from "@/types";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import UserLayout from "@/layouts/frontend/user-layout";
 
-type CartItem = {
+interface CartItem {
   id: number;
   name: string;
   price: number | null;
   quantity: number;
   image?: string;
-};
+}
 
 interface PageProps {
   cart: CartItem[];
@@ -22,15 +23,43 @@ interface PageProps {
   [key: string]: any;
 }
 
-const isRFQ = (price: any) => price === null || price === undefined || Number(price) <= 0;
-const formatNaira = (n: any) => `₦${Number(n).toLocaleString()}`;
+type QuoteCheckoutForm = {
+  shipping: {
+    full_name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+  notes: string;
+};
+
+const isRFQ = (price: number | null | undefined) =>
+  price === null || price === undefined || Number(price) <= 0;
 
 export default function QuoteCheckout({ cart = [], pricedTotal = 0 }: PageProps) {
-  const { data, setData, processing, errors, reset } = useForm({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
+  const { auth } = usePage<SharedData>().props;
+  const user = auth?.user ?? null;
+
+  // Same address builder you used in normal checkout
+  const defaultAddress = useMemo(() => {
+    const line1 = (user as any)?.address_line1 as string | null | undefined;
+    const line2 = (user as any)?.address_line2 as string | null | undefined;
+    return [line1, line2].filter(Boolean).join("\n");
+  }, [user]);
+
+  const { data, setData, processing, errors, reset } = useForm<QuoteCheckoutForm>({
+    shipping: {
+      full_name: user?.name ?? "",
+      email: user?.email ?? "",
+      phone: ((user as any)?.phone as string | null | undefined) ?? "",
+      address: defaultAddress || "",
+      city: ((user as any)?.city as string | null | undefined) ?? "Lagos",
+      state: ((user as any)?.state as string | null | undefined) ?? "Lagos State",
+      country: ((user as any)?.country as string | null | undefined) ?? "Nigeria",
+    },
     notes: "",
   });
 
@@ -40,53 +69,49 @@ export default function QuoteCheckout({ cart = [], pricedTotal = 0 }: PageProps)
     router.post(
       "/quote-checkout",
       {
-        notes: data.notes,
         cart: cart.map((item) => ({
           id: item.id,
-          price: item.price, // nullable
+          price: item.price, // can be null/0
           quantity: item.quantity,
         })),
-        shipping: {
-          full_name: data.name,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          city: "Lagos",
-          state: "Lagos State",
-          country: "Nigeria",
-        },
+        shipping: data.shipping,
+        notes: data.notes,
       },
       {
-        onSuccess: () => {
-          reset();
-          router.visit("/quote-thank-you");
-        },
+        onSuccess: () => reset(),
       }
     );
   };
 
-  return (
-    <div className="max-w-6xl mx-auto py-10 px-4 grid md:grid-cols-3 gap-8">
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="md:col-span-2 space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">
-            Request for Quote
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-300">
-            We’ll review your items and send you a quote.
-          </p>
+  const cartHasRfq = cart.some((i) => isRFQ(i.price));
 
-          <div className="mt-5 space-y-4">
+  return (
+    <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
+      <form onSubmit={handleSubmit} className="space-y-6 md:col-span-2">
+        <div>
+          <h2 className="mb-2 text-xl font-semibold text-gray-800 dark:text-gray-100">
+            Request Quote (RFQ)
+          </h2>
+
+          {!cartHasRfq && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+              No RFQ items found. Please use normal checkout.
+            </div>
+          )}
+
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="full_name">Full Name</Label>
               <Input
-                id="name"
-                value={data.name}
-                onChange={(e) => setData("name", e.target.value)}
-                placeholder="John Doe"
+                id="full_name"
+                value={data.shipping.full_name}
+                onChange={(e) =>
+                  setData("shipping", { ...data.shipping, full_name: e.target.value })
+                }
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors["shipping.full_name"] && (
+                <p className="mt-1 text-sm text-red-500">{errors["shipping.full_name"] as any}</p>
+              )}
             </div>
 
             <div>
@@ -94,33 +119,76 @@ export default function QuoteCheckout({ cart = [], pricedTotal = 0 }: PageProps)
               <Input
                 id="email"
                 type="email"
-                value={data.email}
-                onChange={(e) => setData("email", e.target.value)}
-                placeholder="you@example.com"
+                value={data.shipping.email}
+                onChange={(e) =>
+                  setData("shipping", { ...data.shipping, email: e.target.value })
+                }
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              {errors["shipping.email"] && (
+                <p className="mt-1 text-sm text-red-500">{errors["shipping.email"] as any}</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="phone">Phone Number (optional)</Label>
+              <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                value={data.phone}
-                onChange={(e) => setData("phone", e.target.value)}
-                placeholder="+234 801 234 5678"
+                value={data.shipping.phone}
+                onChange={(e) =>
+                  setData("shipping", { ...data.shipping, phone: e.target.value })
+                }
               />
-              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+              {errors["shipping.phone"] && (
+                <p className="mt-1 text-sm text-red-500">{errors["shipping.phone"] as any}</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="address">Delivery Address (optional)</Label>
+              <Label htmlFor="address">Delivery Address</Label>
               <Textarea
                 id="address"
-                value={data.address}
-                onChange={(e) => setData("address", e.target.value)}
-                placeholder="123 Main Street, Lagos"
+                value={data.shipping.address}
+                onChange={(e) =>
+                  setData("shipping", { ...data.shipping, address: e.target.value })
+                }
               />
-              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+              {errors["shipping.address"] && (
+                <p className="mt-1 text-sm text-red-500">{errors["shipping.address"] as any}</p>
+              )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={data.shipping.city}
+                  onChange={(e) =>
+                    setData("shipping", { ...data.shipping, city: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={data.shipping.state}
+                  onChange={(e) =>
+                    setData("shipping", { ...data.shipping, state: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                value={data.shipping.country}
+                onChange={(e) =>
+                  setData("shipping", { ...data.shipping, country: e.target.value })
+                }
+              />
             </div>
 
             <div>
@@ -129,13 +197,15 @@ export default function QuoteCheckout({ cart = [], pricedTotal = 0 }: PageProps)
                 id="notes"
                 value={data.notes}
                 onChange={(e) => setData("notes", e.target.value)}
-                placeholder="Quantities, preferred delivery time, required accessories, etc."
               />
+              {errors["notes"] && (
+                <p className="mt-1 text-sm text-red-500">{errors["notes"] as any}</p>
+              )}
             </div>
           </div>
         </div>
 
-        <Button type="submit" disabled={processing} className="w-full md:w-auto">
+        <Button type="submit" disabled={processing || !cartHasRfq || cart.length === 0} className="w-full md:w-auto">
           {processing ? "Submitting..." : "Submit Quote Request"}
         </Button>
 
@@ -146,61 +216,16 @@ export default function QuoteCheckout({ cart = [], pricedTotal = 0 }: PageProps)
         </div>
       </form>
 
-      {/* Summary */}
-      <div className="border rounded-lg p-6 bg-white dark:bg-gray-800 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">
-          Quote Summary
-        </h2>
+      <div className="rounded-lg border bg-white p-6 shadow-sm dark:bg-gray-800">
+        <h2 className="mb-4 text-xl font-semibold text-gray-800 dark:text-gray-100">Summary</h2>
 
-        {cart.length ? (
-          <>
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700 mb-4">
-              {cart.map((item) => (
-                <li key={item.id} className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    {item.image && (
-                      <img
-                        src={`/storage/${item.image}`}
-                        alt={item.name}
-                        className="h-12 w-12 rounded-md object-cover"
-                      />
-                    )}
-                    <div>
-                      <div className="text-gray-800 dark:text-gray-100">
-                        {item.name} × {item.quantity}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-300">
-                        {isRFQ(item.price) ? "RFQ item" : `Unit: ${formatNaira(item.price)}`}
-                      </div>
-                    </div>
-                  </div>
+        <div className="text-sm text-gray-700 dark:text-gray-200">
+          Priced items total (snapshot): <span className="font-semibold">₦{pricedTotal.toLocaleString()}</span>
+        </div>
 
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {isRFQ(item.price)
-                      ? "RFQ"
-                      : formatNaira(Number(item.price) * item.quantity)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex justify-between font-semibold text-base">
-              <span>Estimated total (priced items only):</span>
-              <span>{formatNaira(pricedTotal)}</span>
-            </div>
-
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">
-              RFQ items will be priced in the quote we send you.
-            </p>
-          </>
-        ) : (
-          <p className="text-gray-500 text-sm">
-            Your cart is empty.{" "}
-            <Link href="/catalog" className="text-blue-600 underline">
-              Go shopping
-            </Link>
-          </p>
-        )}
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">
+          RFQ items will be priced by our team and updated in your quote details.
+        </p>
       </div>
     </div>
   );

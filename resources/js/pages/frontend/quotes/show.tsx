@@ -262,11 +262,12 @@ export default function QuoteShow() {
             </p>
 
             <Link
-              href="/contact"
-              className="inline-flex items-center justify-center rounded-md bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700"
-            >
-              Contact Support
-            </Link>
+  href={`/my-quotes/${quote.id}/choose-payment`}
+  className="inline-flex items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900"
+>
+  Proceed to Payment
+</Link>
+
           </div>
         )}
       </div>

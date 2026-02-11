@@ -8,13 +8,13 @@ use App\Models\QuoteRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+
 
 class QuoteCheckoutController extends Controller
 {
     public function store(Request $request)
     {
-        $isInertia = (bool) $request->header('X-Inertia'); // ✅ detect Inertia
-
         $validated = $request->validate([
             'cart' => 'required|array|min:1',
             'cart.*.id' => 'required|integer|exists:products,id',
@@ -33,24 +33,16 @@ class QuoteCheckoutController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Must contain at least 1 RFQ item (Rule A)
+        // Must contain at least 1 RFQ item (price null/0)
         $hasRfq = collect($validated['cart'])->contains(function ($item) {
             $price = $item['price'] ?? null;
             return is_null($price) || (is_numeric($price) && $price <= 0);
         });
 
         if (!$hasRfq) {
-            // ✅ Inertia: return back with errors
-            if ($isInertia) {
-                return back()->withErrors([
-                    'quote' => 'No RFQ items found. Use normal checkout.',
-                ]);
-            }
-
-            // ✅ API: JSON
-            return response()->json([
-                'message' => 'No RFQ items found. Use normal checkout.',
-            ], 422);
+            return back()->withErrors([
+                'quote' => 'No RFQ items found. Use normal checkout.',
+            ]);
         }
 
         DB::beginTransaction();
@@ -59,6 +51,7 @@ class QuoteCheckoutController extends Controller
             $productIds = collect($validated['cart'])->pluck('id')->unique()->values()->all();
             $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
+            // Only priced items total (snapshot)
             $pricedTotal = collect($validated['cart'])->sum(function ($item) use ($products) {
                 $p = $products->get($item['id']);
                 $unit = $p?->price;
@@ -98,33 +91,28 @@ class QuoteCheckoutController extends Controller
 
             DB::commit();
 
+            NotificationService::notifyAdmins(
+    type: 'quote.received',
+    title: 'New Quote Request',
+    message: "A new quote request (#{$quote->id}) was submitted.",
+    actionUrl: route('admin.quotes.show', $quote->id), // adjust route if different
+    level: 'info',
+    data: ['quote_request_id' => $quote->id]
+);
+
+
+            // clear cart + store id for thank-you page
             session()->forget('cart');
             session()->put('quote_request_id', $quote->id);
 
-            // ✅ Inertia: redirect (valid Inertia response)
-            if ($isInertia) {
-                return redirect()->route('quote.thankyou');
-            }
-
-            // ✅ API: JSON
-            return response()->json([
-                'message' => 'Quote request submitted!',
-                'quote_request_id' => $quote->id,
-                'quote' => $quote->load('items'),
-            ], 201);
+            // ✅ Proper Inertia redirect
+            return redirect()->route('quote.thankyou');
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            if ($isInertia) {
-                return back()->withInput()->withErrors([
-                    'quote' => 'Failed to submit quote request: ' . $e->getMessage(),
-                ]);
-            }
-
-            return response()->json([
-                'message' => 'Failed to submit quote request',
-                'error' => $e->getMessage(),
-            ], 500);
+            return back()->withInput()->withErrors([
+                'quote' => 'Failed to submit quote request: ' . $e->getMessage(),
+            ]);
         }
     }
 

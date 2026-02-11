@@ -9,13 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
-
 class CheckoutController extends Controller
 {
     /**
-     * Handle checkout and create order
+     * Show checkout page (RFQ or normal)
      */
-
     public function index()
     {
         $cart = array_values(session('cart', []));
@@ -48,27 +46,27 @@ class CheckoutController extends Controller
         ]);
     }
 
-
-
+    /**
+     * Create order + related records
+     */
     public function store(Request $request)
-
-
-
     {
         $validated = $request->validate([
             'cart' => 'required|array|min:1',
             'cart.*.id' => 'required|integer|exists:products,id',
             'cart.*.price' => 'required|numeric|min:0',
             'cart.*.quantity' => 'required|integer|min:1',
+
             'shipping' => 'required|array',
             'shipping.full_name' => 'required|string|max:255',
             'shipping.email' => 'required|email',
             'shipping.phone' => 'required|string|max:20',
-            'shipping.address' => 'required|string|max:500',
+            'shipping.address' => 'required|string|max:500', // ✅ matches DB column
             'shipping.city' => 'required|string|max:255',
             'shipping.state' => 'required|string|max:255',
             'shipping.country' => 'required|string|max:255',
-            'payment_method' => 'required|string|in:paystack,transfer,cod',
+
+            'payment_method' => 'required|string|in:paystack,stripe,transfer,cod',
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -100,8 +98,19 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            // Create shipping address
-            $order->shippingAddress()->create($validated['shipping']);
+            // ✅ Create shipping address (KEEP 'address' because DB column is 'address')
+            $shipping = $validated['shipping'];
+            $shipping['address'] = trim((string) ($shipping['address'] ?? ''));
+
+            if ($shipping['address'] === '') {
+                DB::rollBack();
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['shipping.address' => 'Delivery address is required.']);
+            }
+
+            $order->shippingAddress()->create($shipping);
 
             // Create payment record
             $order->payment()->create([
@@ -113,13 +122,21 @@ class CheckoutController extends Controller
             DB::commit();
             session()->forget('cart');
 
+            // store for thank-you page
+            session(['order_id' => $order->id]);
 
-            // ✅ Inertia request? must redirect (or Inertia::location)
+            // ✅ Inertia redirect: go to order page (pay now) if online method
             if ($request->header('X-Inertia')) {
-                return redirect()->route('checkout.thankyou')->with('order_id', $order->id);
+                if (in_array($validated['payment_method'], ['paystack', 'stripe'], true)) {
+                    return redirect()
+                        ->route('frontend.orders.show', $order->id)
+                        ->with('pay_now', true);
+                }
+
+                return redirect()->route('checkout.thankyou');
             }
 
-            // ✅ Only return JSON for non-Inertia API consumers
+            // ✅ Only JSON for true API clients (not Inertia)
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Order created successfully!',
@@ -128,35 +145,43 @@ class CheckoutController extends Controller
                 ], 201);
             }
 
-            return redirect()->route('checkout.thankyou')->with('order_id', $order->id);
+            return redirect()->route('checkout.thankyou');
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            if ($request->wantsJson() || $request->ajax()) {
+            // ✅ Never return JSON to Inertia
+            if ($request->header('X-Inertia')) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['checkout' => 'Failed to create order: ' . $e->getMessage()]);
+            }
+
+            // JSON only for non-Inertia API calls
+            if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Failed to create order',
                     'error' => $e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->withInput()->withErrors(['checkout' => 'Failed to create order: ' . $e->getMessage()]);
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['checkout' => 'Failed to create order: ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Show thank you page (requires order_id in session)
+     * Thank you page (requires order_id in session)
      */
     public function thankYou(Request $request)
     {
         $orderId = session('order_id');
 
         if (!$orderId) {
-            // prevent direct access
             return redirect()->route('home');
         }
-
-        // If you want to load order details here, you can:
-        // $order = Order::with('items', 'shippingAddress', 'payment')->find($orderId);
 
         return inertia('frontend/checkout/thank-you', [
             'orderId' => $orderId,

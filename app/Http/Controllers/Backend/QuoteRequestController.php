@@ -7,6 +7,8 @@ use App\Models\QuoteRequest;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+
 use Inertia\Inertia;
 
 class QuoteRequestController extends Controller
@@ -47,40 +49,57 @@ class QuoteRequestController extends Controller
     }
 
    
-    public function update(Request $request, QuoteRequest $quote)
-    {
-        $validated = $request->validate([
-            'status' => 'required|string|in:pending,reviewing,ready,converted,closed',
-            'items' => 'nullable|array',
-            'items.*.id' => 'required|integer|exists:quote_request_items,id',
-            'items.*.admin_unit_price' => 'nullable|numeric|min:0',
-        ]);
+   public function update(Request $request, QuoteRequest $quote)
+{
+    $validated = $request->validate([
+        'status' => 'required|string|in:pending,reviewing,ready,converted,closed',
+        'items' => 'nullable|array',
+        'items.*.id' => 'required|integer|exists:quote_request_items,id',
+        'items.*.admin_unit_price' => 'nullable|numeric|min:0',
+    ]);
 
-        DB::transaction(function () use ($validated, $quote) {
-            $quote->update(['status' => $validated['status']]);
+    $oldStatus = $quote->status;
 
-            if (!empty($validated['items'])) {
-                $itemsById = collect($validated['items'])->keyBy('id');
-                $quote->load('items');
+    DB::transaction(function () use ($validated, $quote) {
+        $quote->update(['status' => $validated['status']]);
 
-                foreach ($quote->items as $item) {
-                    if (!$itemsById->has($item->id)) continue;
+        if (!empty($validated['items'])) {
+            $itemsById = collect($validated['items'])->keyBy('id');
+            $quote->load('items');
 
-                    $adminUnit = $itemsById[$item->id]['admin_unit_price'] ?? null;
+            foreach ($quote->items as $item) {
+                if (!$itemsById->has($item->id)) continue;
 
-                    if ($adminUnit === '' || $adminUnit === false) $adminUnit = null;
+                $adminUnit = $itemsById[$item->id]['admin_unit_price'] ?? null;
+                if ($adminUnit === '' || $adminUnit === false) $adminUnit = null;
 
-                    $item->admin_unit_price = $adminUnit;
-                        $item->admin_line_total = is_null($adminUnit)
-                        ? null
-                        : ($adminUnit * $item->quantity);
-                    $item->save();
-                }
+                $item->admin_unit_price = $adminUnit;
+                $item->admin_line_total = is_null($adminUnit)
+                    ? null
+                    : ($adminUnit * $item->quantity);
+
+                $item->save();
             }
-        });
+        }
+    });
 
-        return back()->with('success', 'Quote updated successfully.');
+    // ✅ Notify user when quote becomes "ready"
+    // (this covers: "user doesn't get notified when price is updated in quote")
+    if ($oldStatus !== 'ready' && $validated['status'] === 'ready') {
+        NotificationService::notifyUser(
+            userId: $quote->user_id,
+            type: 'quote.priced',
+            title: 'Your Quote Has Been Priced',
+            message: "Your quote (#{$quote->id}) has been priced. You can review and proceed.",
+            actionUrl: route('quotes.show', $quote->id), // frontend quote show route
+            level: 'success',
+            data: ['quote_request_id' => $quote->id]
+        );
     }
+
+    return back()->with('success', 'Quote updated successfully.');
+}
+
 
    
     public function convertToOrder(\App\Models\QuoteRequest $quote)

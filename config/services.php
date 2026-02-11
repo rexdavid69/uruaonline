@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+       'paystack' => [
+    'secret' => env('PAYSTACK_SECRET_KEY'),
+    'public' => env('PAYSTACK_PUBLIC_KEY'),
+    'base_url' => env('PAYSTACK_PAYMENT_URL', 'https://api.paystack.co'),
+    'callback_url' => env('PAYSTACK_CALLBACK_URL', env('APP_URL') . '/paystack/callback'),
+],
+
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];

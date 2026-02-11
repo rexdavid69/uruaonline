@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import UserLayout from '@/layouts/frontend/user-layout';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
-import React, { useMemo } from 'react';
 import { type SharedData } from '@/types';
 
 interface CartItem {
@@ -23,7 +23,8 @@ interface PageProps {
   [key: string]: any;
 }
 
-type PaymentMethod = 'paystack' | 'transfer' | 'cod';
+// ✅ include stripe
+type PaymentMethod = 'paystack' | 'stripe' | 'transfer' | 'cod';
 
 type CheckoutForm = {
   shipping: {
@@ -45,11 +46,7 @@ const isRFQ = (price: number | null | undefined) =>
 const formatNaira = (n: number | null | undefined) =>
   `₦${Number(n ?? 0).toLocaleString()}`;
 
-export default function Checkout({
-  cart = [],
-  total = 0,
-  hasRfq = false,
-}: PageProps) {
+export default function Checkout({ cart = [], total = 0, hasRfq = false }: PageProps) {
   const { auth } = usePage<SharedData>().props;
   const user = auth?.user ?? null;
 
@@ -80,6 +77,12 @@ export default function Checkout({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ✅ tiny guard (prevents empty address edge cases)
+    if (!data.shipping.address || data.shipping.address.trim().length === 0) {
+      alert('Please enter a delivery address.');
+      return;
+    }
+
     router.post(
       '/checkout',
       {
@@ -88,7 +91,10 @@ export default function Checkout({
           price: item.price,
           quantity: item.quantity,
         })),
-        shipping: data.shipping,
+        shipping: {
+          ...data.shipping,
+          address: data.shipping.address.trim(), // ✅ normalize
+        },
         payment_method: data.payment_method,
         notes: data.notes,
       },
@@ -99,6 +105,7 @@ export default function Checkout({
         onError: (errs) => {
           console.log(errs);
           console.log('SENT payment_method:', data.payment_method);
+          console.log('SENT shipping:', data.shipping);
         },
       },
     );
@@ -113,11 +120,9 @@ export default function Checkout({
             Shipping Details
           </h2>
 
-          {/* If somehow RFQ items slip in, warn */}
           {(hasRfq || cartHasRfq) && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
-              Your cart contains items that require a quote. Please go back to cart
-              and use the Request Quote checkout.
+              Your cart contains items that require a quote. Please go back to cart and use the Request Quote checkout.
             </div>
           )}
 
@@ -136,9 +141,7 @@ export default function Checkout({
                 placeholder="John Doe"
               />
               {errors['shipping.full_name'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.full_name'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.full_name'] as any}</p>
               )}
             </div>
 
@@ -157,9 +160,7 @@ export default function Checkout({
                 placeholder="you@example.com"
               />
               {errors['shipping.email'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.email'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.email'] as any}</p>
               )}
             </div>
 
@@ -177,9 +178,7 @@ export default function Checkout({
                 placeholder="+234 801 234 5678"
               />
               {errors['shipping.phone'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.phone'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.phone'] as any}</p>
               )}
             </div>
 
@@ -197,9 +196,7 @@ export default function Checkout({
                 placeholder="123 Main Street, Lagos"
               />
               {errors['shipping.address'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.address'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.address'] as any}</p>
               )}
             </div>
 
@@ -217,9 +214,7 @@ export default function Checkout({
                 placeholder="Lagos"
               />
               {errors['shipping.city'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.city'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.city'] as any}</p>
               )}
             </div>
 
@@ -237,9 +232,7 @@ export default function Checkout({
                 placeholder="Lagos State"
               />
               {errors['shipping.state'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.state'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.state'] as any}</p>
               )}
             </div>
 
@@ -257,9 +250,7 @@ export default function Checkout({
                 placeholder="Nigeria"
               />
               {errors['shipping.country'] && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors['shipping.country'] as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors['shipping.country'] as any}</p>
               )}
             </div>
 
@@ -271,9 +262,7 @@ export default function Checkout({
                 onChange={(e) => setData('notes', e.target.value)}
                 placeholder="Any delivery notes or requests..."
               />
-              {errors.notes && (
-                <p className="mt-1 text-sm text-red-500">{errors.notes as any}</p>
-              )}
+              {errors.notes && <p className="mt-1 text-sm text-red-500">{errors.notes as any}</p>}
             </div>
 
             <div>
@@ -281,18 +270,16 @@ export default function Checkout({
               <select
                 className="w-full rounded-md border p-2 dark:bg-gray-800 dark:text-gray-100"
                 value={data.payment_method}
-                onChange={(e) =>
-                  setData('payment_method', e.target.value as PaymentMethod)
-                }
+                onChange={(e) => setData('payment_method', e.target.value as PaymentMethod)}
               >
-                <option value="cod">Pay on Delivery</option>
+                <option value="paystack">Paystack (Card/Bank)</option>
+                <option value="stripe">Stripe (Card)</option>
                 <option value="transfer">Bank Transfer</option>
-                <option value="paystack">Card Payment</option>
+                <option value="cod">Pay on Delivery</option>
               </select>
+
               {errors.payment_method && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.payment_method as any}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.payment_method as any}</p>
               )}
             </div>
           </div>
@@ -329,10 +316,7 @@ export default function Checkout({
                 const lineTotal = rfq ? 0 : Number(item.price) * item.quantity;
 
                 return (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between py-3"
-                  >
+                  <li key={item.id} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       {item.image && (
                         <img
@@ -346,9 +330,7 @@ export default function Checkout({
                           {item.name} × {item.quantity}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-300">
-                          {rfq
-                            ? 'RFQ item'
-                            : `Unit: ${formatNaira(item.price)}`}
+                          {rfq ? 'RFQ item' : `Unit: ${formatNaira(item.price)}`}
                         </div>
                       </div>
                     </div>
@@ -376,8 +358,7 @@ export default function Checkout({
 
             {cartHasRfq && (
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">
-                Total shown is for priced items only. RFQ items will be priced in
-                your quote.
+                Total shown is for priced items only. RFQ items will be priced in your quote.
               </p>
             )}
           </>

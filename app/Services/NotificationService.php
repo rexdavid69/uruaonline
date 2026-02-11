@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Admin;
 use App\Models\Notification;
+use App\Models\User;
 
 class NotificationService
 {
@@ -17,8 +18,12 @@ class NotificationService
         };
     }
 
+    /**
+     * Generic notify (recipient id stored in notifications.user_id)
+     * Works for BOTH Admin and User as long as you query by that id.
+     */
     public static function notify(
-        int $adminId,
+        int $recipientId,
         string $type,
         string $title,
         ?string $message = null,
@@ -31,7 +36,7 @@ class NotificationService
         }
 
         return Notification::create([
-            'admin_id' => $adminId,
+            'user_id' => $recipientId, // ✅ FIXED
             'type' => $type,
             'title' => $title,
             'message' => $message,
@@ -53,16 +58,9 @@ class NotificationService
             return;
         }
 
-        Admin::query()->each(function ($admin) use (
-            $type,
-            $title,
-            $message,
-            $actionUrl,
-            $level,
-            $data
-        ) {
+        Admin::query()->each(function ($admin) use ($type, $title, $message, $actionUrl, $level, $data) {
             self::notify(
-                $admin->id,
+                $admin->id,   // stored in notifications.user_id
                 $type,
                 $title,
                 $message,
@@ -71,5 +69,20 @@ class NotificationService
                 $data
             );
         });
+    }
+
+    public static function notifyUser(
+        int $userId,
+        string $type,
+        string $title,
+        ?string $message = null,
+        ?string $actionUrl = null,
+        string $level = 'info',
+        array $data = []
+    ): ?Notification {
+        // (optional) ensure user exists; prevents orphan ids
+        if (!User::whereKey($userId)->exists()) return null;
+
+        return self::notify($userId, $type, $title, $message, $actionUrl, $level, $data);
     }
 }

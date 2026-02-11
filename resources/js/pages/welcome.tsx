@@ -118,50 +118,51 @@ export default function Welcome() {
                     </div>
                 </div>
             </section>
+{/* ================= VALUE PROPOSITION ================= */}
+<section className="py-24">
+    <div className="mx-auto max-w-6xl px-6">
+        <h2 className="mb-16 text-center text-4xl font-bold text-slate-900 dark:text-white">
+            Why Choose UruaOnline
+        </h2>
 
-            {/* ================= VALUE PROPOSITION ================= */}
-            <section className="py-24">
-                <div className="mx-auto max-w-6xl px-6">
-                    <h2 className="mb-16 text-center text-4xl font-bold text-slate-900 dark:text-white">
-                        Why Choose UruaOnline
-                    </h2>
+        {/* GRID */}
+        <div className="grid gap-10 md:grid-cols-3">
+            <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800 text-center">
+                <ShieldCheck className="mb-4 h-10 w-10 text-cyan-600 mx-auto" />
+                <h3 className="mb-2 text-xl font-semibold">
+                    Authorized Distribution
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                    We partner directly with leading manufacturers
+                    to ensure genuine, certified products.
+                </p>
+            </div>
 
-                    <div className="grid gap-10 md:grid-cols-3">
-                        <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800">
-                            <ShieldCheck className="mb-4 h-10 w-10 text-cyan-600" />
-                            <h3 className="mb-2 text-xl font-semibold">
-                                Authorized Distribution
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400">
-                                We partner directly with leading manufacturers
-                                to ensure genuine, certified products.
-                            </p>
-                        </div>
+            <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800 text-center">
+                <Network className="mb-4 h-10 w-10 text-cyan-600 mx-auto" />
+                <h3 className="mb-2 text-xl font-semibold">
+                    Enterprise-Grade Solutions
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                    Built for marine, industrial and
+                    mission-critical environments.
+                </p>
+            </div>
 
-                        <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800">
-                            <Network className="mb-4 h-10 w-10 text-cyan-600" />
-                            <h3 className="mb-2 text-xl font-semibold">
-                                Enterprise-Grade Solutions
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400">
-                                Built for marine, industrial and
-                                mission-critical environments.
-                            </p>
-                        </div>
+            <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800 text-center">
+                <Truck className="mb-4 h-10 w-10 text-cyan-600 mx-auto" />
+                <h3 className="mb-2 text-xl font-semibold">
+                    Reliable Local Delivery
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                    Fast procurement and dependable logistics
+                    tailored to your region.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
 
-                        <div className="rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-800">
-                            <Truck className="mb-4 h-10 w-10 text-cyan-600" />
-                            <h3 className="mb-2 text-xl font-semibold">
-                                Reliable Local Delivery
-                            </h3>
-                            <p className="text-slate-600 dark:text-slate-400">
-                                Fast procurement and dependable logistics
-                                tailored to your region.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </PublicLayout>
     );
 }
